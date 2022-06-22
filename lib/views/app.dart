@@ -19,14 +19,17 @@ class App extends StatefulWidget {
 
   @override
   State<App> createState() => _AppState(Data.getSeries());
-
-
 }
 
 class _AppState extends State<App> with TickerProviderStateMixin, Data{
   var date = Data();
   late TabController _tabController;
   List<charts.Series<Serie, DateTime>> seriesList;
+
+  DateTime _selected_date_inicio = DateTime.now();
+  DateTime _selected_date_fim = DateTime.now();
+
+  bool loading =false;
 
   _AppState(this.seriesList);
 
@@ -41,15 +44,55 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
     Data.getSeriesFromApi().then((value) => seriesList = value);
   }
 
-  void refresh(){
+  void _refresh(){
     Data.getSeriesFromApi().then((value) => {
       // debugPrint(value.toString())
-      setState(()=>{seriesList = value})
+      setState(()=>{seriesList = value, loading = false})
     });
     // setState(() {
     //   Data.getSeriesFromApi().then((value) => seriesList = value);
     // });
   }
+
+  Future<void> _selectDate(BuildContext context) async {
+    // pega data inicial
+    final DateTime? picked_inicio = await showDatePicker(
+        context: context,
+        initialDate: _selected_date_inicio,
+        firstDate: DateTime(2015, 8),
+        lastDate: DateTime(2101),
+        helpText: "Inicio",
+    );
+
+    if (picked_inicio != null && picked_inicio != _selected_date_inicio) {
+        _selected_date_inicio = picked_inicio;
+
+        // pega data final
+        final DateTime? picked_fim = await showDatePicker(
+                context: context,
+                initialDate: _selected_date_fim,
+                firstDate: DateTime(2015, 8),
+                lastDate: DateTime(2101),
+                helpText: "Fim",
+        );
+
+        if (picked_fim != null && picked_fim != _selected_date_inicio) {
+          _selected_date_fim = picked_fim;
+
+          // atualiza as datas
+          setState(() {
+            loading = true;
+
+            _selected_date_inicio = picked_inicio;
+            _selected_date_fim = picked_fim;
+
+            _refresh();
+
+          });
+        }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -63,13 +106,15 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
           Tab(icon: Icon(FontAwesomeIcons.chartBar))
         ]),
         actions: [
-          IconButton(onPressed: refresh, icon: Icon(Icons.refresh))
+          IconButton(onPressed: _refresh, icon: Icon(Icons.refresh))
         ],
       ),
       body: TabBarView(controller: _tabController, children: [
-        // TextButton(onPressed: refresh, child: Text('Refresh')),
+        // TextButton(onPressed: _refresh, child: Text('Refresh')),
         Stack(
-          children: [
+          children:<Widget> [
+            if(loading)
+              Center(child: CircularProgressIndicator()),
             Padding(
               padding: const EdgeInsets.all(15.0),
               child: lineChart(seriesList),
@@ -81,7 +126,7 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
           child: ApiTesting(result: ''),
         )
       ]),
+      floatingActionButton: FloatingActionButton(onPressed: () {_selectDate(context);}, child: Icon(Icons.date_range)),
     );
   }
-
 }
