@@ -2,6 +2,7 @@ import 'package:charts_flutter/flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
+import 'package:gauges/gauges.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
@@ -30,6 +31,7 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
   DateTime _selected_date_fim = DateTime.now();
 
   bool loading =false;
+  String filtro = 'co';
 
   _AppState(this.seriesList);
 
@@ -38,14 +40,15 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
     super.initState();
     _tabController = TabController(
       initialIndex: 0,
-      length: 2,
+      length: 1,
       vsync: this,
     );
-    Data.getSeriesFromApi().then((value) => seriesList = value);
+    Data.getSeriesFromApi(_selected_date_inicio.toString()?? "2022-06-29", _selected_date_fim.toString()?? "2022-06-29", "co").then((value) => seriesList = value);
   }
 
   void _refresh(){
-    Data.getSeriesFromApi().then((value) => {
+
+    Data.getSeriesFromApi(_selected_date_inicio.toString()?? "2022-06-29", _selected_date_fim.toString()?? "2022-06-29", filtro).then((value) => {
       // debugPrint(value.toString())
       setState(()=>{seriesList = value, loading = false})
     });
@@ -100,10 +103,52 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
     // debugPrint(pieChartData[0].toString());
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dados Coletados'),
+        // title: Text('Dados Coletados'),
+        title:  new DropdownButton<String>(
+          value: filtro,
+          items: <DropdownMenuItem<String>>[
+            new DropdownMenuItem(
+              child: new Text('co'),
+              value: 'co',
+            ),
+            new DropdownMenuItem(
+              child: new Text('umidade'),
+              value: 'umidade'
+            ),
+            new DropdownMenuItem(
+              child: new Text('umidade2'),
+              value: 'umidade2'
+            ),
+            new DropdownMenuItem(
+              child: new Text('pressao'),
+              value: 'pressao'
+            ),
+            new DropdownMenuItem(
+              child: new Text('temperatura'),
+              value: 'temperatura'
+            ),
+            new DropdownMenuItem(
+              child: new Text('temperatura2'),
+              value: 'temperatura2'
+            ),
+            new DropdownMenuItem(
+              child: new Text('temperatura_cpu'),
+              value: 'temperatura_cpu'
+            ),
+          ], 
+          onChanged: (String? value) {
+            // debugPrint(value);
+
+            setState(() => filtro = value?? "");
+
+            _refresh();
+          },
+        ),
+      
         bottom: TabBar(controller: _tabController, tabs: [
           Tab(icon: Icon(FontAwesomeIcons.chartLine)),
-          Tab(icon: Icon(FontAwesomeIcons.chartBar))
+          // Tab(icon: Icon(FontAwesomeIcons.chartBar)),
+          // Tab(icon: Icon(FontAwesomeIcons.chartBar)),
         ]),
         actions: [
           IconButton(onPressed: _refresh, icon: Icon(Icons.refresh))
@@ -121,10 +166,18 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
             ),
           ],
         ),
-        Container(
-          color: Colors.grey,
-          child: ApiTesting(result: ''),
-        )
+        // Container(
+        //   color: Colors.grey,
+        //   child: ApiTesting(result: ''),
+        // ),
+        // Container(
+        //   color: Colors.black,
+        //   child: Column(
+        //     children: [
+
+        //     ],
+        //   ),
+        // )
       ]),
       floatingActionButton: FloatingActionButton(onPressed: () {_selectDate(context);}, child: Icon(Icons.date_range)),
     );
