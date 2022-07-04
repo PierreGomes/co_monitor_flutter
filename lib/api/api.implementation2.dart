@@ -12,12 +12,14 @@ import 'package:http/http.dart' as http;
 class Api_2 implements ApiInterface{
 
   @override
-  Future<List<JsonObject>> getJsonData(String dtInicio, String dtFinal) async {
+  Future<List<JsonObject>?> getJsonData(String dtInicio, String dtFinal) async {
 
     var params = {
-      "dtInicio": dtInicio?? "2022-06-29",
-      "dtFinal": dtFinal?? "2022-06-29" 
+      "dtInicio": dtInicio.substring(0, 10)?? "2022-06-29",
+      "dtFinal": dtFinal.substring(0, 10)?? "2022-06-29" 
     };
+
+    debugPrint(params.toString());
 
     String url = "http://13.58.175.85:8081/dados";
     String url_testes = "https://kelvinseibt.pythonanywhere.com/testes";
@@ -25,11 +27,12 @@ class Api_2 implements ApiInterface{
     var headers = {
       'Content-Type': 'application/json'
     };
-    var request = http.Request('GET', Uri.parse(url_testes));
-    request.body = json.encode({
-      "dtInicio": "2022-06-21",
-      "dtFinal": "2022-06-30"
-    });
+    var request = http.Request('GET', Uri.parse(url));
+    // request.body = json.encode({
+    //   "dtInicio": "2022-06-30",
+    //   "dtFinal": "2022-07-30"
+    // });
+    request.body = json.encode(params);
     request.headers.addAll(headers);
 
     http.StreamedResponse response = await request.send();
@@ -49,7 +52,7 @@ class Api_2 implements ApiInterface{
       debugPrint(response.reasonPhrase);
     }
 
-    return jsonDecode("{\"error\": \"true\"}");
+    return null;
 
   }
 }

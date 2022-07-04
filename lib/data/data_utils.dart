@@ -6,6 +6,7 @@ import 'package:get/get_connect/http/src/request/request.dart';
 import 'series.model.dart';
 import '../api/api.implementation2.dart';
 import '../api/objects/json.object2.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class Data {
   // Dados Fake Exemplo
@@ -35,8 +36,14 @@ class Data {
   }
 
   // Busca da Api
-  static Future<List<charts.Series<Serie, DateTime>>> getSeriesFromApi(String dtInicio, String dtFinal, String filtro) async {
-    List<JsonObject> list = await new Api_2().getJsonData(dtInicio, dtFinal);
+  static Future<List<charts.Series<Serie, DateTime>>?> getSeriesFromApi(String dtInicio, String dtFinal, String filtro) async {
+    List<JsonObject>? list = await new Api_2().getJsonData(dtInicio, dtFinal);
+
+    if(list ==  null || list.length == 0){
+      debugPrint("erro");
+      return null;
+    }
+
     List<Serie> data = [];
 
     debugPrint(filtro);

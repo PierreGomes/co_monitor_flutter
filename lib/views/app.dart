@@ -1,7 +1,10 @@
+import 'dart:developer';
+
 import 'package:charts_flutter/flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gauges/gauges.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -43,14 +46,36 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
       length: 1,
       vsync: this,
     );
-    Data.getSeriesFromApi(_selected_date_inicio.toString()?? "2022-06-29", _selected_date_fim.toString()?? "2022-06-29", "co").then((value) => seriesList = value);
+
+    if(loading){
+      Data.getSeriesFromApi(
+        _selected_date_inicio.toString()?? "2022-06-29",
+        _selected_date_fim.toString()?? "2022-06-29",
+        filtro ?? "co"
+      ).then(
+        // atualiza os dados do estado
+        (value){
+          setState((){
+            log(value.toString());
+            loading = false;
+            seriesList = value!;
+          });
+        }
+      );
+    }
   }
 
   void _refresh(){
+    
+    debugPrint(_selected_date_inicio.toString() + _selected_date_fim.toString());
 
-    Data.getSeriesFromApi(_selected_date_inicio.toString()?? "2022-06-29", _selected_date_fim.toString()?? "2022-06-29", filtro).then((value) => {
+    Data.getSeriesFromApi(
+      _selected_date_inicio.toString()?? "2022-06-29",
+      _selected_date_fim.toString()?? "2022-06-29",
+      filtro
+    ).then((value) => {
       // debugPrint(value.toString())
-      setState(()=>{seriesList = value, loading = false})
+      setState(()=>{seriesList = value!, loading = false})
     });
     // setState(() {
     //   Data.getSeriesFromApi().then((value) => seriesList = value);
@@ -67,7 +92,9 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
         helpText: "Inicio",
     );
 
-    if (picked_inicio != null && picked_inicio != _selected_date_inicio) {
+    debugPrint("ok");
+
+    if (picked_inicio != null) {
         _selected_date_inicio = picked_inicio;
 
         // pega data final
@@ -79,9 +106,9 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
                 helpText: "Fim",
         );
 
-        if (picked_fim != null && picked_fim != _selected_date_inicio) {
+        if (picked_fim != null) {
           _selected_date_fim = picked_fim;
-
+          debugPrint("ok 2");
           // atualiza as datas
           setState(() {
             loading = true;
@@ -89,16 +116,50 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
             _selected_date_inicio = picked_inicio;
             _selected_date_fim = picked_fim;
 
-            _refresh();
+            // _refresh();
 
           });
         }
+          debugPrint("ok 3");
+
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
+
+    if(loading){
+      Data.getSeriesFromApi(
+        _selected_date_inicio.toString()?? "2022-06-29",
+        _selected_date_fim.toString()?? "2022-06-29",
+        filtro ?? "co"
+      ).then(
+        // atualiza os dados do estado
+        (value){
+          setState((){
+            log(value.toString());
+            loading = false;
+
+            if(value == null){
+              debugPrint("Sem dados para plotar");
+              Fluttertoast.showToast(
+                msg: "Nenhum dado encontrada",
+                toastLength: Toast.LENGTH_LONG,
+                gravity: ToastGravity.TOP_RIGHT,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0
+              );
+              return;
+            }
+
+            seriesList = value!;
+          });
+        }
+      );
+    }
     
     // debugPrint(pieChartData[0].toString());
     return Scaffold(
@@ -137,49 +198,43 @@ class _AppState extends State<App> with TickerProviderStateMixin, Data{
             ),
           ], 
           onChanged: (String? value) {
-            // debugPrint(value);
-
             setState(() => filtro = value?? "");
-
             _refresh();
           },
         ),
-      
         bottom: TabBar(controller: _tabController, tabs: [
           Tab(icon: Icon(FontAwesomeIcons.chartLine)),
-          // Tab(icon: Icon(FontAwesomeIcons.chartBar)),
-          // Tab(icon: Icon(FontAwesomeIcons.chartBar)),
         ]),
         actions: [
-          IconButton(onPressed: _refresh, icon: Icon(Icons.refresh))
+          IconButton(
+            onPressed: _refresh,
+            icon: Icon(Icons.refresh)
+          )
         ],
       ),
-      body: TabBarView(controller: _tabController, children: [
-        // TextButton(onPressed: _refresh, child: Text('Refresh')),
-        Stack(
-          children:<Widget> [
-            if(loading)
-              Center(child: CircularProgressIndicator()),
-            Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: lineChart(seriesList),
-            ),
-          ],
-        ),
-        // Container(
-        //   color: Colors.grey,
-        //   child: ApiTesting(result: ''),
-        // ),
-        // Container(
-        //   color: Colors.black,
-        //   child: Column(
-        //     children: [
-
-        //     ],
-        //   ),
-        // )
-      ]),
-      floatingActionButton: FloatingActionButton(onPressed: () {_selectDate(context);}, child: Icon(Icons.date_range)),
+      // Grafíco
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          Stack(
+            children:<Widget> [
+              // loading
+              if(loading)
+                Center(child: CircularProgressIndicator()),
+              // chart
+              Padding(
+                padding: const EdgeInsets.all(15.0),
+                child: lineChart(seriesList),
+              ),
+            ],
+          ),
+        ]
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {_selectDate(context);},
+        child: Icon(Icons.date_range)
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
     );
   }
 }
